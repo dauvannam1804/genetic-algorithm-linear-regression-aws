@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+*model_weights.npy
+*npy
+*csv
+*.log
+.github

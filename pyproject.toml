@@ -7,7 +7,9 @@ requires-python = ">=3.13"
 dependencies = [
     "boto3>=1.40.55",
     "dotenv>=0.9.9",
+    "gradio>=5.49.1",
     "numpy>=2.3.4",
     "pandas>=2.3.3",
+    "pyyaml>=6.0.3",
     "requests>=2.32.5",
 ]
