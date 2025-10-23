@@ -62,7 +62,7 @@ Sau khi train → model được deploy tự động (hoặc manual).
 
 - Đặt tên `aio_conquer26_ec2`
 - Chọn instance type `c7i-flex.large (2 vCPU, 4GB RAM)` vì hiệu năng ổn định, chi phí thấp, đủ cho training Genetic Algorithm + Linear Regression và dễ tích hợp với S3, và deploy trên AWS
-- Tạo key pair và tải về để có thể ssh từ máy local hoặc dùng cho CI/CD Github Actions sau này
+- Tạo key pair và tải về file `.pem` để có thể ssh từ máy local hoặc dùng cho CI/CD Github Actions sau này
 - Chọn:     
 Allow SSH traffic from: My IP → để chỉ bạn truy cập được qua SSH (bảo mật).     
 Allow HTTPS traffic from the internet: để sau này truy cập API qua cổng 443 (nếu có SSL).   
@@ -82,12 +82,30 @@ Allow HTTP traffic from the internet: để truy cập ứng dụng Gradio demo 
 
 
 
-Train và deploy trên Instance EC2
+# Train và deploy trên Instance EC2
 
-training_script.sh
+- Tìm địa chỉ public của instance EC
+![Public IP Instance](images/EC2_PublicIP.png)
+- Copy RSA Private Key (toan bộ nội dung file .pem đã tải trước đó)
+![RSA Key](images/EC2_RSA_Key.png)
 
-kiểm tra data đã có trong folder `data/` hay chưa
-- chưa có thì tải từ s3 về  `data/` dùng `fetch_dataset_s3.py`
-- nếu trên s3 cũng chưa có thì chạy `upload_dataset_s3.py` để tải data từ url về s3 sau đó tải về  `data/` dùng `fetch_dataset_s3.py`
+- Sau đó:  
+  - Vào GitHub repository của bạn → tab **Settings**
+  - Chọn **Secrets and variables → Actions → New repository secret**
+  - Thêm 2 secrets:
 
-train model dùng script `model/train.py`
+    | Name           | Value |
+    |----------------|--------|
+    | `EC2_SSH_KEY`  | *(Toàn bộ nội dung file `.pem` bạn vừa copy, bao gồm cả dòng `-----BEGIN RSA PRIVATE KEY-----` và `-----END RSA PRIVATE KEY-----`)* |
+    | `EC2_PUBLIC_IP`| *(Ví dụ: `3.106.203.9` — địa chỉ IP Publiccủa EC2 instance)* |
+- ![RSA Key](images/Github_Secrets.png)
+
+- Thử push code từ local lên github thì lỗi khi chạy github actions, ở local deploy bình thường vì có file `.env` chứa các key cần thiết để chạy code nhưng khi push code lên github thì ta không push file `.env` vì như vậy sẽ lộ key
+![Deploy Error](images/DeployError.png)
+- Tiếp tục dùng GitHub Actions Secrets để lưu thông tin AWS thay vì .env thủ công. Khi deploy, workflow sẽ tự tạo file .env trên EC2.
+
+    | Name | Value |
+    |------|--------|
+    | `AWS_ACCESS_KEY_ID` | Access Key của bạn |
+    | `AWS_SECRET_ACCESS_KEY` | Secret Key của bạn |
+    | `AWS_REGION` | Vùng AWS bạn đang dùng (ví dụ: `ap-southeast-2`) |
