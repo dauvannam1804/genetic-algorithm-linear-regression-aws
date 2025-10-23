@@ -1,0 +1,6 @@
+pop_size: 5 # Change this to 50 to trigger github actions
+n_generations: 100
+crossover_rate: 0.8
+mutation_rate: 0.1
+data_path: "src/data/advertising.csv"
+target_col: "Sales"
