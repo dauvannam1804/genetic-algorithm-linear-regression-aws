@@ -42,4 +42,7 @@ with gr.Blocks(title="Sales Prediction") as demo:
 # ===== Launch =====
 if __name__ == "__main__":
     print("🚀 Launching Gradio Interface for Sales Prediction...")
-    demo.launch()
+    demo.launch(
+        server_name="0.0.0.0",
+        server_port=7860,
+    )
