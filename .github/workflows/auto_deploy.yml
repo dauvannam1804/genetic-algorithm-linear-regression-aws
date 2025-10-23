@@ -1,0 +1,66 @@
+name: Auto Train and Deploy on EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH connection
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Run training and deploy scripts on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+            set -e
+
+            echo "=== [1] Check Git installation ==="
+            if ! command -v git &> /dev/null; then
+              sudo yum install git -y
+            fi
+
+            echo "=== [2] Pull latest code in /home/ec2-user ==="
+            cd /home/ec2-user || exit 1
+
+            if [ ! -d ".git" ]; then
+              echo "Cloning repository..."
+              git clone git@github.com:dauvannam1804/genetic-algorithm-linear-regression-aws.git .
+            else
+              echo "Updating existing repository..."
+              git reset --hard
+              git pull origin main
+            fi
+
+            echo "=== [3] Check uv installation ==="
+            export PATH="$HOME/.cargo/bin:$PATH"
+            if ! command -v uv &> /dev/null; then
+                echo "Installing uv..."
+                curl -LsSf https://astral.sh/uv/install.sh | sh
+                source "$HOME/.cargo/env"
+            fi
+
+            echo "=== [4] Setup environment ==="
+            cd /home/ec2-user
+            uv sync
+            source .venv/bin/activate
+
+            echo "=== [5] Run training ==="
+            chmod +x src/training_script.sh
+            bash src/training_script.sh
+
+            echo "=== [6] Run deploy ==="
+            chmod +x src/deploy_script.sh
+            bash src/deploy_script.sh
+
+            echo "=== ✅ Deployment Complete ==="
+          EOF
