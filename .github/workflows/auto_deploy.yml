@@ -34,7 +34,6 @@ jobs:
             fi
 
             echo "=== [2] Setting up project directory ==="
-            # Use a dedicated directory for the project to avoid conflicts
             PROJECT_DIR="/home/ec2-user/app"
             mkdir -p $PROJECT_DIR
             cd $PROJECT_DIR
@@ -50,16 +49,18 @@ jobs:
             fi
 
             echo "=== [4] Checking for uv installation ==="
-            export PATH="$HOME/.cargo/bin:$PATH"
+            # Add the default uv install directory to the PATH for this session
+            export PATH="$HOME/.local/bin:$PATH"
             if ! command -v uv &> /dev/null; then
                 echo "uv is not installed. Installing uv..."
+                # Install uv using the official script. It now installs to $HOME/.local/bin
                 curl -LsSf https://astral.sh/uv/install.sh | sh
-                source "$HOME/.cargo/env"
             else
                 echo "uv is already installed."
             fi
 
             echo "=== [5] Setting up environment with uv ==="
+            # The uv command should now be available in the PATH
             uv sync
 
             echo "=== [6] Activating environment and running scripts ==="
