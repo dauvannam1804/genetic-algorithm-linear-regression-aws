@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
+  workflow_dispatch: # Allows manual triggering
 
 jobs:
   deploy:
@@ -22,45 +22,56 @@ jobs:
       - name: Run training and deploy scripts on EC2
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+            # Exit on any error
             set -e
 
-            echo "=== [1] Check Git installation ==="
+            echo "=== [1] Checking for Git installation ==="
             if ! command -v git &> /dev/null; then
+              echo "Git is not installed. Installing Git..."
               sudo yum install git -y
+            else
+              echo "Git is already installed."
             fi
 
-            echo "=== [2] Pull latest code in /home/ec2-user ==="
-            cd /home/ec2-user || exit 1
+            echo "=== [2] Setting up project directory ==="
+            # Use a dedicated directory for the project to avoid conflicts
+            PROJECT_DIR="/home/ec2-user/app"
+            mkdir -p $PROJECT_DIR
+            cd $PROJECT_DIR
 
+            echo "=== [3] Pulling latest code ==="
             if [ ! -d ".git" ]; then
-              echo "Cloning repository..."
-              git clone git@github.com:dauvannam1804/genetic-algorithm-linear-regression-aws.git .
+              echo "Cloning repository into $PROJECT_DIR..."
+              git clone https://github.com/${{ github.repository }}.git .
             else
-              echo "Updating existing repository..."
-              git reset --hard
+              echo "Repository exists. Pulling latest changes..."
+              git stash
               git pull origin main
             fi
 
-            echo "=== [3] Check uv installation ==="
+            echo "=== [4] Checking for uv installation ==="
             export PATH="$HOME/.cargo/bin:$PATH"
             if ! command -v uv &> /dev/null; then
-                echo "Installing uv..."
+                echo "uv is not installed. Installing uv..."
                 curl -LsSf https://astral.sh/uv/install.sh | sh
                 source "$HOME/.cargo/env"
+            else
+                echo "uv is already installed."
             fi
 
-            echo "=== [4] Setup environment ==="
-            cd /home/ec2-user
+            echo "=== [5] Setting up environment with uv ==="
             uv sync
+
+            echo "=== [6] Activating environment and running scripts ==="
             source .venv/bin/activate
 
-            echo "=== [5] Run training ==="
+            echo "--> Running Training Script..."
             chmod +x src/training_script.sh
             bash src/training_script.sh
 
-            echo "=== [6] Run deploy ==="
-            chmod +x src/deploy_script.sh
+            echo "--> Running Deploy Script..."
+            chmod +x src/deploy_script.sh src/shutdown_script.sh
             bash src/deploy_script.sh
 
-            echo "=== ✅ Deployment Complete ==="
+            echo "=== ✅ Deployment to EC2 Complete ==="
           EOF
