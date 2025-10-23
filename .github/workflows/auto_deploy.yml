@@ -49,21 +49,25 @@ jobs:
             fi
 
             echo "=== [4] Checking for uv installation ==="
-            # Add the default uv install directory to the PATH for this session
             export PATH="$HOME/.local/bin:$PATH"
             if ! command -v uv &> /dev/null; then
                 echo "uv is not installed. Installing uv..."
-                # Install uv using the official script. It now installs to $HOME/.local/bin
                 curl -LsSf https://astral.sh/uv/install.sh | sh
             else
                 echo "uv is already installed."
             fi
 
             echo "=== [5] Setting up environment with uv ==="
-            # The uv command should now be available in the PATH
             uv sync
 
-            echo "=== [6] Activating environment and running scripts ==="
+            echo "=== [6] Creating .env file from GitHub Secrets ==="
+            # This creates the .env file that the Python scripts need to get AWS credentials.
+            # The secrets themselves are stored securely in GitHub repository settings.
+            echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" > .env
+            echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
+            echo "REGION=${{ secrets.AWS_REGION }}" >> .env
+
+            echo "=== [7] Activating environment and running scripts ==="
             source .venv/bin/activate
 
             echo "--> Running Training Script..."
