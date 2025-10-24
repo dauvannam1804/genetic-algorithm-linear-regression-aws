@@ -1,12 +1,9 @@
 # genetic-algorithm-linear-regression-aws
-This project builds a training and deployment pipeline for a Linear Regression model optimized by Genetic Algorithm using a small Advertising dataset.
-
-Code ML pipeline: tải data → train model → lưu model → deploy EC2 cùng Gradio
-
-Mỗi lần push code/hyperparameter → trigger CI/CD train lại.
-
-Sau khi train → model được deploy tự động (hoặc manual).
-
+Mục tiêu:
+- ML pipeline: tải data → train model → lưu model → deploy EC2 cùng Gradio
+- Mỗi lần push code/hyperparameter → trigger CI/CD train lại.
+- Sau khi train → model được deploy tự động (hoặc manual).
+![Pipeline](images/Pipeline.png)
 
 
 # Tạo tài khoản AWS
@@ -109,3 +106,16 @@ Allow HTTP traffic from the internet: để truy cập ứng dụng Gradio demo 
     | `AWS_ACCESS_KEY_ID` | Access Key của bạn |
     | `AWS_SECRET_ACCESS_KEY` | Secret Key của bạn |
     | `AWS_REGION` | Vùng AWS bạn đang dùng (ví dụ: `ap-southeast-2`) |
+
+- Mỗi khi push code, github actions sẽ chạy workflows được định nghĩa trong `.github/workflows`
+![Github Workflows](images/Github_WorkflowsRun.png)
+
+- Khi chạy thành công, ứng dụng Gradio sẽ chạy tại `'EC2_PUBLIC_IP':7860`, thử truy cập vào địa chỉ này từ trình duyệt
+![Deploy Error 1](images/DeployError1.png)
+- Gặp lỗi bởi vì khi chạy app trên EC2 (Gradio, FastAPI, Flask...), mặc định chỉ truy cập được trong EC2. 
+
+- Muốn truy cập từ bên ngoài (ví dụ từ laptop cá nhân), cần mở port 7860 trong Security Group của EC2. Nếu không mở, trình duyệt sẽ không thể kết nối tới http://<EC2_IP>:7860, vì AWS chặn port đó.
+![Setup Security Group](images/EC2_SecurityGroup.png)
+
+- Thử reload lại và test kết quả
+![Deploy Result](images/DeployResult.png)
